@@ -125,7 +125,20 @@ public class QsbContainerView extends FrameLayout {
                 // There is no search provider, just show the default widget.
                 return getDefaultView(container, false /* show setup icon */);
             }
+
+            if (mWidgetInfo.provider.getClassName().equals("com.google.android.googlequicksearchbox.SearchWidgetProvider")) {
+                try {
+                    int resId = activity.getPackageManager().getReceiverInfo(mWidgetInfo.provider, 128).metaData.getInt("com.google.android.gsa.searchwidget.alt_initial_layout_cqsb", -1);
+                    if (resId != -1) {
+                        mWidgetInfo.initialLayout = resId;
+                    }
+                } catch (Exception e) {
+                }
+            }
+
             Bundle opts = createBindOptions();
+            opts.putString("attached-launcher-identifier", getActivity().getPackageName());
+            opts.putString("requested-widget-style", "cqsb");
             Activity activity = getActivity();
             AppWidgetManager widgetManager = AppWidgetManager.getInstance(activity);
 
