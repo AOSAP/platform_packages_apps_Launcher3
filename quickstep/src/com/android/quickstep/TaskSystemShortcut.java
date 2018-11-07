@@ -54,6 +54,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
+import android.app.Activity;
+import android.app.ActivityManagerNative;
+import android.app.IActivityManager;
+import android.content.pm.PackageManager;
+import android.widget.Toast;
+
 /**
  * Represents a system shortcut that can be shown for a recent task.
  */
@@ -269,4 +275,49 @@ public class TaskSystemShortcut<T extends SystemShortcut> extends SystemShortcut
             return null;
         }
     }
+
+    public static class KillApp extends TaskSystemShortcut {
+
+        public KillApp() {
+            super(R.drawable.ic_kill_app, R.string.recent_task_option_kill_app);
+        }
+
+        @Override
+        public View.OnClickListener getOnClickListener(
+                BaseDraggingActivity activity, TaskView taskView) {
+            final Task task  = taskView.getTask();
+            final RecentsView recentsView = activity.getOverviewPanel();
+
+            final TaskThumbnailView thumbnailView = taskView.getThumbnail();
+            return (v -> {
+                if (TaskSystemShortcut.killTask(task.key, (Activity)activity)) {
+                    recentsView.removeIgnoreResetTask(taskView);
+                    dismissTaskMenuView(activity);
+                    recentsView.dismissTask(taskView, false, true/*remove*/);
+                }
+            });
+        }
+    }
+
+    protected static boolean killTask(Task.TaskKey taskKey, Activity activity) {
+        boolean killed = false;
+        if (activity.checkCallingOrSelfPermission(android.Manifest.permission.FORCE_STOP_PACKAGES)
+                == PackageManager.PERMISSION_GRANTED) {
+            String packageName = taskKey.getComponent().getPackageName();
+            if (packageName != null) {
+                IActivityManager iam = ActivityManagerNative.getDefault();
+                try {
+                    iam.forceStopPackage(packageName, UserHandle.USER_CURRENT);
+                    Toast appKilled = Toast.makeText(activity, R.string.recents_app_killed,
+                            Toast.LENGTH_SHORT);
+                    appKilled.show();
+                    killed = true;
+                } catch (RemoteException e) {
+                    killed = false;
+                }
+            }
+        }
+        return killed;
+    }
+
 }
