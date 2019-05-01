@@ -125,6 +125,13 @@ public class QsbContainerView extends FrameLayout {
                 // There is no search provider, just show the default widget.
                 return getDefaultView(container, false /* show setup icon */);
             }
+            Bundle opts = createBindOptions();
+            Activity activity = getActivity();
+            AppWidgetManager widgetManager = AppWidgetManager.getInstance(activity);
+            int widgetId = Utilities.getPrefs(activity).getInt(mKeyWidgetId, -1);
+            AppWidgetProviderInfo widgetInfo = widgetManager.getAppWidgetInfo(widgetId);
+            boolean isWidgetBound = (widgetInfo != null) &&
+                    widgetInfo.provider.equals(mWidgetInfo.provider);
 
             if (mWidgetInfo.provider.getClassName().equals("com.google.android.googlequicksearchbox.SearchWidgetProvider")) {
                 try {
@@ -135,17 +142,6 @@ public class QsbContainerView extends FrameLayout {
                 } catch (Exception e) {
                 }
             }
-
-            Bundle opts = createBindOptions();
-            opts.putString("attached-launcher-identifier", getActivity().getPackageName());
-            opts.putString("requested-widget-style", "cqsb");
-            Activity activity = getActivity();
-            AppWidgetManager widgetManager = AppWidgetManager.getInstance(activity);
-
-            int widgetId = Utilities.getPrefs(activity).getInt(mKeyWidgetId, -1);
-            AppWidgetProviderInfo widgetInfo = widgetManager.getAppWidgetInfo(widgetId);
-            boolean isWidgetBound = (widgetInfo != null) &&
-                    widgetInfo.provider.equals(mWidgetInfo.provider);
 
             int oldWidgetId = widgetId;
             if (!isWidgetBound) {
@@ -170,11 +166,11 @@ public class QsbContainerView extends FrameLayout {
             if (isWidgetBound) {
                 mQsb = (QsbWidgetHostView) mQsbWidgetHost.createView(activity, widgetId, mWidgetInfo);
                 mQsb.setId(R.id.qsb_widget);
-
                 if (!Utilities.containsAll(AppWidgetManager.getInstance(activity)
                         .getAppWidgetOptions(widgetId), opts)) {
                     mQsb.updateAppWidgetOptions(opts);
                 }
+                mQsb.setPadding(0, 0, 0, 0);
                 mQsbWidgetHost.startListening();
                 return mQsb;
             }
@@ -239,6 +235,8 @@ public class QsbContainerView extends FrameLayout {
             opts.putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, size.top);
             opts.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, size.right);
             opts.putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, size.bottom);
+            opts.putString("attached-launcher-identifier", getActivity().getPackageName());
+            opts.putString("requested-widget-style", "cqsb");
             return opts;
         }
 
@@ -308,3 +306,4 @@ public class QsbContainerView extends FrameLayout {
         QsbWidgetHostView newView(Context context);
     }
 }
+
